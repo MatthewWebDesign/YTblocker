@@ -27,64 +27,57 @@
 </head>
 <body>
     <div class="message">
-        <h1>YouTube Blocked</h1>
-        <p>This tool prevents access to YouTube on Mobile Safari.</p>
+        <h1>YouTube Blocker</h1>
+        <p>YouTube is blocked while this page is active.</p>
+        <button onclick="activateBlocker()">Activate Blocker</button>
     </div>
 
     <script>
-        // Function to check if we're on Mobile Safari
         function isMobileSafari() {
             const ua = navigator.userAgent;
             return /iP(ad|od|hone)/i.test(ua) && 
                    /WebKit/i.test(ua) && 
-                   !/CriOS/i.test(ua) &&  // Not Chrome
-                   !/FxiOS/i.test(ua);    // Not Firefox
+                   !/CriOS/i.test(ua) && 
+                   !/FxiOS/i.test(ua);
         }
 
-        // Function to block YouTube
-        function blockYouTube() {
+        async function activateBlocker() {
             if (!isMobileSafari()) {
-                document.querySelector('.message p').textContent = 
-                    "This blocker only works on Mobile Safari.";
+                alert("This blocker only works on Mobile Safari.");
                 return;
             }
 
-            // Override window.location to block YouTube
-            const originalLocation = window.location;
-            Object.defineProperty(window, 'location', {
-                get: function() {
-                    return originalLocation;
-                },
-                set: function(value) {
-                    if (typeof value === 'string' && 
-                        (value.includes('youtube.com') || value.includes('youtu.be'))) {
-                        alert('Access to YouTube is blocked by this tool.');
-                        return;
-                    }
-                    originalLocation.href = value;
+            // Register service worker
+            if ('serviceWorker' in navigator) {
+                try {
+                    await navigator.serviceWorker.register('/sw.js');
+                    console.log('Service Worker registered');
+                    alert('Blocker activated! Keep this tab open.');
+                } catch (error) {
+                    console.error('Service Worker registration failed:', error);
+                    alert('Failed to activate blocker: ' + error.message);
                 }
-            });
-
-            // Block navigation attempts
-            window.addEventListener('beforeunload', function(e) {
-                const currentUrl = window.location.href;
-                if (currentUrl.includes('youtube.com') || currentUrl.includes('youtu.be')) {
-                    e.preventDefault();
-                    e.returnValue = 'YouTube access is blocked.';
-                    return 'YouTube access is blocked.';
-                }
-            });
-
-            // Check initial URL
-            if (window.location.href.includes('youtube.com') || 
-                window.location.href.includes('youtu.be')) {
-                alert('YouTube access is blocked.');
-                window.location.href = window.location.pathname; // Stay on current page
             }
+
+            // Aggressive redirect approach
+            setInterval(() => {
+                if (window.location.href.includes('youtube.com') || 
+                    window.location.href.includes('youtu.be')) {
+                    window.location.href = window.location.pathname;
+                }
+            }, 500);
+
+            // Try to maintain focus
+            window.addEventListener('blur', () => {
+                window.focus();
+            });
         }
 
-        // Run the blocker
-        window.onload = blockYouTube;
+        // Initial check
+        if (!isMobileSafari()) {
+            document.querySelector('.message p').textContent = 
+                "This blocker only works on Mobile Safari.";
+        }
     </script>
 </body>
 </html>
